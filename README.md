@@ -1,10 +1,10 @@
-# CWC AI Trading Skill Challenge Example Template
+# CWC AI Trading Skill Challenge — VWAP Momentum Scalp
 
-This repository provides an example Skill template for the CWC AI Trading Skill Challenge.
+This repository is a submission for the CWC AI Trading Skill Challenge.
 
-Participants may use this repository as a reference when preparing and submitting their own trading strategy Skill. The example demonstrates how to describe a strategy in a clear, reproducible, and reviewable format.
+It defines an original intraday scalping Skill for crypto perpetual futures, built on a session VWAP anchor, short-term EMA momentum, and volume confirmation — structured so it can be described, reviewed, and executed by an AI Agent.
 
-## What This Template Includes
+## What This Repository Includes
 
 - Skill name and strategy type
 - Applicable markets and timeframes
@@ -15,41 +15,35 @@ Participants may use this repository as a reference when preparing and submittin
 - Standard output format
 - Submission checklist
 
-## Example Skill
+## The Skill
 
-The example Skill in this repository is:
+**VWAP Momentum Scalp Strategy**
 
-**ETH/BTC Ratio Rotation Strategy**
+It uses session VWAP as a fair-value anchor, EMA9/EMA21 alignment for momentum direction, and a volume spike filter for entry confirmation, and defines:
 
-It uses the ETH/BTC ratio as a market risk preference indicator and demonstrates how a trading Skill can define:
-
-- when to overweight ETH;
-- when to overweight BTC;
-- when to stay neutral;
-- when to reduce exposure due to risk controls.
+- when to enter long on a confirmed pullback in an uptrend;
+- when to enter short on a confirmed pullback in a downtrend;
+- when to stay out (no-trade zone / chop);
+- when to pause trading due to risk controls (loss streaks, news windows, funding extremity).
 
 ## Repository Structure
 
 ```text
-cwc-trading-skill-template/
+cwc-scalp-skill/
 ├── README.md
 ├── SKILL.md
 ├── LICENSE
 └── examples/
-    └── eth-btc-ratio-rotation.md
+    └── vwap-momentum-scalp.md
 ```
 
 ## How To Use
 
-1. Read `SKILL.md` as the example template.
-2. Copy the structure into your own public GitHub repository.
-3. Replace the strategy logic, parameters, risks, and output format with your own trading Skill.
-4. Make sure your GitHub repository is public and accessible.
-5. Submit your public GitHub link through the CWC activity form.
+1. Read `SKILL.md` for the full strategy definition.
+2. See `examples/vwap-momentum-scalp.md` for a walked-through example signal.
+3. This Skill can be adapted by an AI Agent to fetch live market data, calculate the indicators, apply the rules, and produce a standardized trade output.
 
 ## Submission Checklist
-
-Before submitting, please make sure your Skill includes:
 
 - Skill name
 - Strategy type
@@ -60,14 +54,6 @@ Before submitting, please make sure your Skill includes:
 - Public GitHub link
 - Clear invalidation conditions
 - Explanation of how the Skill could be used by an AI Agent
-
-Bonus items:
-
-- Backtest screenshot or simulation result
-- Real trading review
-- Parameter table
-- Risk boundary explanation
-- CWC / Agentic Trading scenario explanation
 
 ## Disclaimer
 

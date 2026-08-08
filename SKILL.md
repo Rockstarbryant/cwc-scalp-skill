@@ -1,110 +1,110 @@
 ---
-name: eth-btc-ratio-rotation
+name: vwap-momentum-scalp
 description: >
-  example Skill for the CWC AI Trading Skill Challenge.
-  This Skill demonstrates a transparent ETH/BTC ratio rotation strategy that can be used as a reference
-  structure for user submissions. It monitors the ETH/BTC ratio trend to identify whether market risk
-  preference is favoring ETH or BTC, and provides a rules-based rotation framework.
+  A CWC AI Trading Skill Challenge submission. This Skill defines a rules-based
+  intraday scalping strategy for crypto perpetual futures that combines session VWAP,
+  short-term EMA momentum, and volume confirmation to identify high-probability
+  pullback entries, with strict risk controls suited for AI Agent execution.
 ---
 
-# ETH/BTC Ratio Rotation Strategy
+# VWAP Momentum Scalp Strategy
 
-> example template for the CWC AI Trading Skill Challenge.
-> This example is designed to show how a trading Skill can be structured, reviewed, and executed by an AI Agent.
+> Submission for the CWC AI Trading Skill Challenge.
+> Structured to be reviewed and executed by an AI Agent.
 
 ## 1. Skill Name
 
-**ETH/BTC Ratio Rotation Strategy**
+**VWAP Momentum Scalp Strategy**
 
 ## 2. Strategy Type
 
-**Trend Rotation**
+**Intraday Scalping (Momentum Pullback)**
 
-This strategy sits between trend following and relative-strength rotation. It does not attempt to predict the absolute price direction of BTC or ETH. Instead, it uses the ETH/BTC ratio to judge which asset is currently showing stronger relative momentum.
+This strategy trades short-term continuation moves. It does not predict long-term direction — it identifies moments where price pulls back to a fair-value anchor (VWAP) within an existing short-term trend, and takes a quick, tightly-risked entry on confirmation.
 
 ## 3. Applicable Market
 
-- **Markets:** Crypto spot or perpetual futures
+- **Markets:** Crypto perpetual futures
 - **Trading pairs:** `BTC/USDT`, `ETH/USDT`
-- **Signal pair:** `ETH/BTC`
-- **Primary timeframe:** 1D
-- **Secondary confirmation timeframe:** 4H
-- **Best suited for:** Trending markets
-- **Less suited for:** Sideways markets with frequent false breakouts
+- **Primary timeframe:** 1-minute
+- **Confirmation timeframe:** 5-minute
+- **Best suited for:** Trending or high-volatility sessions (US/EU overlap, post-news volatility)
+- **Less suited for:** Low-volume hours, tight sideways chop
 
 ## 4. Core Logic
 
 The strategy answers one core question:
 
-**Should the portfolio currently overweight ETH, overweight BTC, or remain neutral?**
-
-The decision is based on the position and slope of the ETH/BTC ratio relative to its moving averages.
+**Is price pulling back to value within a confirmed short-term trend, with enough participation to continue?**
 
 ```text
 Signal source:
-R = ETH/BTC ratio
-MA_fast = 21-day moving average of R
-MA_slow = 55-day moving average of R
+VWAP = session volume-weighted average price
+EMA9 = 9-period EMA on 1m
+EMA21 = 21-period EMA on 1m
+Vol_avg20 = 20-period average volume on 1m
+ATR14 = 14-period ATR on 1m
 
-Rule 1: ETH-Led Market
-If R crosses above MA_fast, MA_fast is above MA_slow, and MA_fast is sloping upward:
-→ Market risk preference is improving.
-→ ETH is showing relative strength.
-→ Suggested action: overweight ETH and underweight BTC.
+Rule 1: Long Setup
+If price is above VWAP, EMA9 > EMA21, price pulls back to touch EMA9 or VWAP,
+and the confirming candle's volume > 1.5x Vol_avg20:
+→ Momentum bias is up, pullback is being bought.
+→ Suggested action: enter long at confirmation candle close.
 
-Rule 2: BTC-Led Market
-If R crosses below MA_fast, MA_fast is below MA_slow, and MA_fast is sloping downward:
-→ Market risk preference is weakening.
-→ BTC is showing relative strength.
-→ Suggested action: overweight BTC and underweight ETH.
+Rule 2: Short Setup
+If price is below VWAP, EMA9 < EMA21, price pulls back to touch EMA9 or VWAP,
+and the confirming candle's volume > 1.5x Vol_avg20:
+→ Momentum bias is down, pullback is being sold.
+→ Suggested action: enter short at confirmation candle close.
 
-Rule 3: Neutral Market
-If MA_fast and MA_slow are intertwined, or R repeatedly moves between the two averages:
-→ No clear rotation signal.
-→ Suggested action: keep a balanced BTC / ETH allocation or reduce total exposure.
+Rule 3: No-Trade Zone
+If price is chopping across VWAP, or EMA9 and EMA21 are tangled/flat:
+→ No clear momentum. Do not trade.
 
 Risk Overlay:
-If BTC closes below its 200-day moving average:
-→ Maximum total position is reduced to 30%.
+If 2 consecutive losing trades occur in the session:
+→ Stop trading for the remainder of the session.
 
-If the Fear & Greed Index is below 15:
-→ Stop opening new positions until the risk signal improves.
+If within 15 minutes of a major scheduled news event (e.g. CPI, FOMC):
+→ No new entries.
+
+If funding rate is at a session extreme:
+→ Reduce position size by 50%.
 ```
 
-## 5. Why Use ETH/BTC?
+## 5. Why Use VWAP + Momentum + Volume?
 
-The ETH/BTC ratio can be treated as a risk preference indicator for the crypto market.
+VWAP acts as an intraday fair-value anchor — many participants (especially institutional flow) use it as a reference for entries and rebalancing, which gives pullbacks to VWAP added significance.
 
-When ETH/BTC rises, capital is often rotating from BTC into ETH and higher-beta assets. When ETH/BTC falls, capital is often rotating back into BTC or reducing risk exposure.
-
-This makes the ETH/BTC ratio useful for identifying relative leadership between BTC and ETH.
+EMA9/EMA21 alignment filters for an existing short-term trend, so entries are taken with momentum rather than against it. The volume filter exists to avoid acting on low-conviction pullbacks that are prone to failing — a scalp entered on thin volume has a much higher chance of stalling or reversing.
 
 ## 6. Agent Execution Flow
 
 ```text
 Step 1: Fetch market data
-- BTC price history
-- ETH price history
-- ETH/BTC ratio history
-- Fear & Greed Index
+- 1m OHLCV for BTC/USDT and ETH/USDT (rolling window, e.g. last 100 candles)
+- 5m OHLCV for confirmation
+- Current funding rate
+- Scheduled macro news calendar (for the current session)
 
 Step 2: Calculate indicators
-- ETH/BTC ratio
-- MA21 of ETH/BTC
-- MA55 of ETH/BTC
-- Slope of MA21 and MA55
-- BTC price versus BTC 200-day moving average
+- Session VWAP
+- EMA9 and EMA21 on 1m
+- 20-period average volume
+- ATR14 on 1m
 
 Step 3: Apply signal rules
-- ETH-led market
-- BTC-led market
-- Neutral market
-- Risk-reduction mode
+- Long setup check
+- Short setup check
+- No-trade zone check
+- Risk overlay checks (loss streak, news window, funding extremity)
 
 Step 4: Produce output
-- Current state
-- Suggested allocation
-- Executable action
+- Current state (Long Setup / Short Setup / No Trade / Risk-Paused)
+- Entry price
+- Stop price
+- Target price
+- Position size adjustment (if any)
 - Invalidation condition
 - Confidence level
 ```
@@ -113,37 +113,43 @@ Step 4: Produce output
 
 | Parameter | Default Value | Meaning | Adjustment Notes |
 |---|---:|---|---|
-| `MA_fast` | 21 | Fast moving average for ETH/BTC | Lower value is more sensitive |
-| `MA_slow` | 55 | Slow moving average for ETH/BTC | Higher value is more stable |
-| `confirm_tf` | 4H | Secondary confirmation timeframe | Can be changed to 1H for shorter-term use |
-| `btc_trend_ma` | 200 | BTC long-term trend filter | Used as a risk overlay |
-| `fng_pause` | 15 | Fear & Greed pause threshold | Higher value is more conservative |
-| `max_position` | 80% | Maximum single-sided allocation | Should be lowered for conservative users |
-| `rebalance` | 1D close | Rebalancing frequency | Avoids excessive intraday switching |
+| `ema_fast` | 9 | Fast EMA for momentum direction | Lower = more sensitive, more noise |
+| `ema_slow` | 21 | Slow EMA for momentum direction | Higher = smoother, slower to flip |
+| `vol_multiplier` | 1.5x | Volume spike threshold vs 20-period average | Raise for stricter confirmation |
+| `atr_period` | 14 | ATR period for stop sizing | Standard setting |
+| `stop_mode` | min(swing, 0.5x ATR) | Stop distance basis | Tighter of the two, capped risk |
+| `target_r` | 1.5R | Fixed reward target as multiple of risk | Can be adjusted for market volatility |
+| `max_hold_candles` | 10-15 (1m) | Max candles before exiting a stalled trade | Prevents dead capital |
+| `max_trades_session` | 3 | Max entries per session | Caps overtrading |
+| `loss_streak_stop` | 2 | Consecutive losses before pausing | Circuit breaker |
+| `daily_loss_limit` | 2% | Max daily drawdown before stopping | Capital preservation |
+| `news_blackout` | 15 min | No entries around major news | Avoids volatility spikes on data releases |
 
 ## 8. Standard Output Format
 
 ```text
-ETH/BTC Rotation Signal | [Date] (UTC+8)
+VWAP Momentum Scalp Signal | [Timestamp] (UTC+8)
 
-ETH/BTC ratio: 0.0XXX
-MA21: 0.0XXX
-MA55: 0.0XXX
-MA slope: Up / Down / Flat
-BTC vs MA200: Above / Below
-Fear & Greed Index: NN
+Pair: BTC/USDT
+Price: XX,XXX.X
+VWAP: XX,XXX.X
+EMA9: XX,XXX.X
+EMA21: XX,XXX.X
+Volume vs Avg20: X.Xx
+Funding Rate: X.XXX%
 
 Current State:
-ETH-Led / BTC-Led / Neutral / Risk-Reduction
-
-Suggested Allocation:
-BTC __% | ETH __% | Cash __%
+Long Setup / Short Setup / No Trade / Risk-Paused
 
 Executable Action:
-[Example: Rotate 30% of BTC allocation into ETH.]
+[Example: Enter long at 62,450, stop 62,310, target 62,660.]
+
+Entry: XX,XXX.X
+Stop: XX,XXX.X
+Target (1.5R): XX,XXX.X
 
 Invalidation Condition:
-[Example: If ETH/BTC falls back below MA21, the signal is invalidated.]
+[Example: If price closes back below VWAP before target is hit, exit.]
 
 Confidence:
 __%
@@ -154,16 +160,14 @@ This output is for strategy demonstration only and does not constitute investmen
 
 ## 9. Risk Notice
 
-- Moving average signals are lagging indicators and may generate false signals in sideways markets.
-- A correct ETH/BTC rotation signal does not guarantee profit if the broader crypto market declines.
+- Scalping strategies are highly sensitive to execution speed, slippage, and fees — profitability can be eroded quickly in live conditions.
+- Volume and momentum signals can produce false confirmations, especially around low-liquidity periods or thin order books.
 - This strategy does not replace independent research, risk management, or portfolio planning.
-- If used with perpetual futures or leverage, funding fees, liquidation risk, and slippage may significantly increase losses.
+- Perpetual futures carry funding fees, liquidation risk, and can amplify losses significantly under leverage.
 - If market data is delayed, missing, or unreliable, the Agent should stop generating trading actions until data quality is restored.
 - This Skill is provided for educational and activity demonstration purposes only. It does not constitute investment advice, financial advice, or trading advice.
 
 ## 10. Submission Checklist
-
-Participants using this template should replace the example content with their own strategy and confirm that the final submission includes:
 
 - Skill name
 - Strategy type
@@ -178,15 +182,13 @@ Participants using this template should replace the example content with their o
 
 ## 11. Public GitHub Link
 
-Replace this section with the public GitHub repository link for your own submitted Skill.
-
 ```text
-https://github.com/<your-account>/<your-skill-repository>
+https://github.com/rockstarbryant/cwc-scalp-skill
 ```
 
 ## 12. Disclaimer
 
-This Skill is an example template for the CWC AI Trading Skill Challenge and is provided for educational and demonstration purposes only.
+This Skill is a submission for the CWC AI Trading Skill Challenge and is provided for educational and demonstration purposes only.
 
 It does not represent a commitment that the strategy will be listed, supported, executed, or productized by CoinW. It does not constitute investment advice or a guarantee of returns.
 
