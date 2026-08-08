@@ -2,29 +2,30 @@
 
 This repository is a submission for the CWC AI Trading Skill Challenge.
 
-It defines an original intraday scalping Skill for crypto perpetual futures, built on a session VWAP anchor, short-term EMA momentum, and volume confirmation — structured so it can be described, reviewed, and executed by an AI Agent.
+It defines a mechanical, agent-executable intraday scalping Skill for crypto perpetual futures, built around a layered architecture: **Regime → Signal → Risk → Execution → Exit → Circuit Breaker**. Every decision the Agent makes — entry, position size, leverage, exit — is traceable to an explicit numeric rule, not a discretionary judgment call.
 
 ## What This Repository Includes
 
-- Skill name and strategy type
-- Applicable markets and timeframes
-- Core strategy logic
-- Key parameters and adjustment notes
-- Risk notice and invalidation conditions
-- Agent execution flow
+- Skill identity, market/timeframe scope
+- 5-minute regime detection (Trend-Up / Trend-Down / Range)
+- 1-minute entry signal with a precisely defined confirmation candle
+- A signal scoring model (replaces unsupported "confidence %" claims)
+- A full risk engine: stop-loss logic, position sizing, leverage cap, liquidation-distance safeguard
+- Portfolio exposure control across correlated pairs (BTC/ETH)
+- Spread/slippage/net-R:R cost filter
+- Daily/session circuit breakers, loss-streak cooldowns, and profit-protection rules
+- Numerically defined news and funding-rate controls
+- Data-quality safeguards
+- Full agent execution flow (state machine)
 - Standard output format
-- Submission checklist
+- Backtesting/validation protocol
+- A fully worked example including risk-engine math
 
 ## The Skill
 
 **VWAP Momentum Scalp Strategy**
 
-It uses session VWAP as a fair-value anchor, EMA9/EMA21 alignment for momentum direction, and a volume spike filter for entry confirmation, and defines:
-
-- when to enter long on a confirmed pullback in an uptrend;
-- when to enter short on a confirmed pullback in a downtrend;
-- when to stay out (no-trade zone / chop);
-- when to pause trading due to risk controls (loss streaks, news windows, funding extremity).
+The 5-minute timeframe determines whether the strategy is allowed to trade at all and in which direction (regime). The 1-minute timeframe determines exact entry timing, gated by a mechanically defined confirmation candle (touch, reclaim, close position, volume, and range checks — no ambiguity about what counts as a "pullback"). Every valid setup is scored out of 12 points before it's actioned, and every trade passes through a stop-loss engine, position-sizing engine, leverage/liquidation check, and portfolio exposure check before execution.
 
 ## Repository Structure
 
@@ -39,26 +40,30 @@ cwc-scalp-skill/
 
 ## How To Use
 
-1. Read `SKILL.md` for the full strategy definition.
-2. See `examples/vwap-momentum-scalp.md` for a walked-through example signal.
-3. This Skill can be adapted by an AI Agent to fetch live market data, calculate the indicators, apply the rules, and produce a standardized trade output.
+1. Read `SKILL.md` for the full strategy definition — 27 sections covering identity, regime detection, entry logic, risk engine, circuit breakers, and validation methodology.
+2. See `examples/vwap-momentum-scalp.md` for a complete walked-through signal, including the risk-engine calculations (stop, position size, leverage, liquidation distance).
+3. This Skill can be adapted by an AI Agent to fetch live market data, run the regime/signal/risk pipeline, and produce a standardized trade output — or rejection with reason.
 
 ## Submission Checklist
 
 - Skill name
 - Strategy type
 - Applicable market
-- Core logic
+- Core logic (regime, entry, confirmation candle)
 - Core parameters
 - Risk notice
 - Public GitHub link
+- Agent execution flow (state machine)
+- Standard output format
 - Clear invalidation conditions
-- Explanation of how the Skill could be used by an AI Agent
+- Position sizing / leverage / liquidation protection
+- Portfolio exposure control
+- Backtesting/validation methodology
 
 ## Disclaimer
 
 This repository is provided for educational and activity demonstration purposes only. It does not constitute investment advice, financial advice, trading advice, or a recommendation to buy or sell any crypto asset.
 
-Crypto assets are highly volatile and may result in partial or total loss of funds. Users should conduct their own research and fully evaluate their risk tolerance before using any strategy.
+Crypto assets are highly volatile and may result in partial or total loss of funds. Users should conduct their own research and fully evaluate their risk tolerance before using any strategy. Parameter defaults throughout this Skill are illustrative and must be independently validated (see `SKILL.md` §21) before any live use.
 
 CoinW reserves the right to interpret the final rules of the CWC AI Trading Skill Challenge.
